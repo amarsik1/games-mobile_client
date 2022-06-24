@@ -1,4 +1,4 @@
-import v4 from 'uuid';
+import { v4 } from 'uuid';
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -24,6 +24,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     width: '100%',
     paddingLeft: 10,
+    color: 'white',
   },
   usernameForm: {
     padding: 20,
@@ -49,7 +50,7 @@ const Room = () => {
       const playerUuid = storageUuid || v4();
       if (!storageUuid) await AsyncStorage.setItem('uuid', playerUuid);
 
-      const response = await new RequestService('rooms/connect').post({
+      const [response] = await new RequestService('rooms/connect').post({
         roomId,
         username,
         uuid: playerUuid,

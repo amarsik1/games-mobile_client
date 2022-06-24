@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import Room from './app/pages/Room';
 import { useProvideRoom, roomContext } from './app/services/roomContext';
+import 'react-native-get-random-values';
 
 const styles = StyleSheet.create({
   container: {

@@ -88,7 +88,7 @@ const Room = () => {
         <TextInput
           placeholder="Приклад: amarsik1"
           style={styles.textInput}
-          value={usernameInput}
+          value={usernameInput ?? ''}
           onChangeText={setUsernameInput}
         />
         <Button onPress={handleSaveusername} title="Зберегти" />

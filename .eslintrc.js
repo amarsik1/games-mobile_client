@@ -33,6 +33,7 @@ module.exports = {
       { usePrettierrc: true },
     ],
     'react/jsx-uses-react': 'off',
+    'react/jsx-props-no-spreading': 'off',
     'react/prop-types': 'off',
     'react/react-in-jsx-scope': 'off',
     'react/style-prop-object': 'off',

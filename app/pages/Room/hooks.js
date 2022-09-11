@@ -12,11 +12,8 @@ export const useGameRoom = () => {
 
     if (!room) return unsub;
 
-    socket.on('gameStarted', () => {
-      setRoom((prev) => ({
-        ...prev,
-        gameStarted: true,
-      }));
+    socket.on('gameStarted', (updRoom) => {
+      setRoom(updRoom);
     });
 
     return unsub;

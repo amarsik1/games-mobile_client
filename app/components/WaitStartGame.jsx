@@ -2,7 +2,7 @@ import { View, Text } from 'react-native';
 
 const WaitStartGame = () => (
   <View>
-    <Text style={{ color: 'white' }}>WaitStartGame</Text>
+    <Text>WaitStartGame</Text>
   </View>
 );
 

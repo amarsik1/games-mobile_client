@@ -1,5 +1,9 @@
 import { v4 } from 'uuid';
-import { useState, useEffect, useCallback } from 'react';
+import {
+  useState,
+  useEffect,
+  useCallback,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   StyleSheet, View, Button, TextInput, Text,
@@ -10,6 +14,7 @@ import RequestService from '../../services/RequestService';
 import { useGameRoom } from './hooks';
 import WaitStartGame from '../../components/WaitStartGame';
 import Lobby from '../../components/Lobby';
+import SetAvatar from '../../components/SetAvatar';
 
 const styles = StyleSheet.create({
   container: {
@@ -32,11 +37,25 @@ const styles = StyleSheet.create({
   },
 });
 
+const STEPS = {
+  SCAN: 1,
+  SET_USERNAME: 2,
+  SET_AVATAR: 3,
+  WAITING: 4,
+  GAME_STARTED: 5,
+};
+
 const Room = () => {
   const { room, setRoom } = useGameRoom();
+  const [step, setStep] = useState(STEPS.SCAN);
+  const [roomId, setRoomId] = useState('');
   const [scanned, setScanned] = useState(true);
   const [username, setUsername] = useState(null);
   const [usernameInput, setUsernameInput] = useState(null);
+
+  useEffect(() => {
+    if (room?.gameStarted) setStep(STEPS.GAME_STARTED);
+  }, [room]);
 
   const handleSendMessage = () => {
     setScanned(false);
@@ -44,26 +63,36 @@ const Room = () => {
 
   const onScan = useCallback(async ({ data }) => {
     setScanned(true);
+
     try {
-      const { roomId } = JSON.parse(data);
-      const storageUuid = await AsyncStorage.getItem('uuid');
-      const playerUuid = storageUuid || v4();
-      if (!storageUuid) await AsyncStorage.setItem('uuid', playerUuid);
-
-      const [response] = await new RequestService('rooms/connect').post({
-        roomId,
-        username,
-        uuid: playerUuid,
-      });
-
-      setScanned(true);
-      setRoom(response);
-
-      socket.emit('joinToRoom', roomId);
+      const { roomId: scannedId } = JSON.parse(data);
+      setRoomId(scannedId);
+      setStep(STEPS.SET_AVATAR);
     } catch (e) {
       alert(e.message);
     }
-  }, [username]);
+  }, []);
+
+  const handleConnect = useCallback(async (avatar) => {
+    const storageUuid = await AsyncStorage.getItem('uuid');
+    const playerUuid = storageUuid || v4();
+    if (!storageUuid) await AsyncStorage.setItem('uuid', playerUuid);
+
+    const [response] = await new RequestService(`rooms/connect/${roomId}`).post({
+      avatar,
+      username,
+      uuid: playerUuid,
+    });
+
+    setRoom(response);
+    setStep(STEPS.WAITING);
+
+    socket.emit('joinToRoom', roomId);
+  }, [username, roomId]);
+
+  const onTakePhoto = (avatar) => {
+    handleConnect(avatar);
+  };
 
   useEffect(() => {
     if (username) return;
@@ -96,24 +125,32 @@ const Room = () => {
     );
   }
 
-  if (room && !room.gameStarted) return <WaitStartGame />;
+  if (step === STEPS.SCAN) {
+    return (
+      <View style={styles.container}>
+        {!scanned && (
+          <BarCodeScanner
+            onBarCodeScanned={onScan}
+            style={StyleSheet.absoluteFillObject}
+          />
+        )}
 
-  if (room?.gameStarted) return <Lobby />;
+        {scanned && (
+          <Button onPress={handleSendMessage} title="Сканувати код" />
+        )}
+      </View>
+    );
+  }
 
-  return (
-    <View style={styles.container}>
-      {!scanned && (
-        <BarCodeScanner
-          onBarCodeScanned={onScan}
-          style={StyleSheet.absoluteFillObject}
-        />
-      )}
+  if (step === STEPS.SET_AVATAR) {
+    return (
+      <SetAvatar onTakePhoto={onTakePhoto} />
+    );
+  }
 
-      {scanned && (
-        <Button onPress={handleSendMessage} title="Сканувати код" />
-      )}
-    </View>
-  );
+  if (step === STEPS.WAITING) return <WaitStartGame />;
+
+  return <Lobby />;
 };
 
 export default Room;
